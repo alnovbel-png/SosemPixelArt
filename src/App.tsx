@@ -27,6 +27,7 @@ import { CompassJournalModal } from './components/CompassJournalModal';
 import { HelpModal } from './components/HelpModal';
 import { EndingModal } from './components/EndingModal';
 import { VirtualControls } from './components/VirtualControls';
+import { MiniMap } from './components/MiniMap';
 import { downloadOfflineGameHtml } from './utils/exportOfflineHtml';
 import { Sparkles, Compass } from 'lucide-react';
 
@@ -88,8 +89,22 @@ export default function App() {
   const [endingType, setEndingType] = useState<'perfect' | 'resilient'>('perfect');
   const [branchChoice, setBranchChoice] = useState<string>('empathy_first');
   const [isMuted, setIsMuted] = useState<boolean>(false);
+  const [showMiniMap, setShowMiniMap] = useState<boolean>(() => window.innerWidth >= 768);
   const [questHint, setQuestHint] = useState<string>(
     'Pusaka Kompas Hati terjatuh di depanmu! Tekan [Spasi] atau tombol Kompas untuk menggunakannya.'
+  );
+
+  // Click on mini-map to auto-navigate
+  const handleMiniMapNavigate = useCallback(
+    (tileX: number, tileY: number) => {
+      if (currentDialogue) return;
+      const targetWorldX = tileX * TILE_SIZE + 16;
+      const targetWorldY = tileY * TILE_SIZE + 16;
+      targetPosRef.current = { x: targetWorldX, y: targetWorldY };
+      rendererRef.current?.setDestination(targetWorldX, targetWorldY);
+      sound.playMenuSelect();
+    },
+    [currentDialogue]
   );
 
   // Camera viewport
@@ -526,6 +541,11 @@ export default function App() {
       if (e.key === 'j' || e.key === 'J') {
         setShowJournal((prev) => !prev);
       }
+
+      // Toggle Mini-Map
+      if (e.key === 'm' || e.key === 'M') {
+        setShowMiniMap((prev) => !prev);
+      }
     };
 
     const handleKeyUp = (e: KeyboardEvent) => {
@@ -835,6 +855,19 @@ export default function App() {
         onOpenHelp={() => setShowHelp(true)}
         onExportOffline={downloadOfflineGameHtml}
         isDialogueOpen={!!currentDialogue}
+        onToggleMiniMap={() => setShowMiniMap((prev) => !prev)}
+        isMiniMapOpen={showMiniMap}
+      />
+
+      {/* Toggleable Mini-Map Overlay in the Corner */}
+      <MiniMap
+        isOpen={showMiniMap}
+        onToggle={() => setShowMiniMap((prev) => !prev)}
+        playerRef={playerRef}
+        npcs={npcs}
+        zoneStatus={zoneStatus}
+        mapLayout={mapLayout}
+        onNavigateToTile={handleMiniMapNavigate}
       />
 
       {/* Dialogue System Box */}

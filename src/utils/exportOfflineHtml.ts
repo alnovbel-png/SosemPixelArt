@@ -49,6 +49,26 @@ export function downloadOfflineGameHtml() {
     .act-btn.compass { background: #d97706; border-color: #fef08a; }
     .act-btn:active { transform: scale(0.95); }
 
+    /* Mini-Map */
+    #minimap-card {
+      position: absolute;
+      bottom: 16px;
+      right: 16px;
+      background: rgba(2, 6, 23, 0.95);
+      border: 2px solid rgba(245, 158, 11, 0.7);
+      border-radius: 12px;
+      padding: 6px 8px;
+      z-index: 28;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      box-shadow: 0 0 20px rgba(0,0,0,0.85);
+      font-family: 'Press Start 2P', monospace;
+    }
+    #minimap-header { display: flex; justify-content: space-between; align-items: center; font-size: 7px; color: #f59e0b; }
+    #minimap-canvas { width: 144px; height: 112px; border: 1px solid #334155; border-radius: 4px; background: #0f172a; image-rendering: pixelated; }
+    #minimap-footer { font-size: 6px; color: #34d399; display: flex; justify-content: space-between; }
+
     /* Breathing overlay */
     #breathing-box { position: absolute; inset: 0; background: rgba(2, 6, 23, 0.88); z-index: 40; display: none; flex-direction: column; align-items: center; justify-content: center; gap: 14px; text-align: center; }
     .breath-circle { width: 120px; height: 120px; border-radius: 50%; background: radial-gradient(circle, #06b6d4, #0284c7); display: flex; align-items: center; justify-content: center; font-size: 28px; font-weight: bold; transition: transform 1s ease-in-out; }
@@ -61,12 +81,28 @@ export function downloadOfflineGameHtml() {
       
       <div class="top-bar">
         <div class="title-tag">🧭 Lembah Nada Rasa</div>
-        <button class="btn-action" id="btn-toggle-compass" onclick="toggleCompass()">KOMPAS [Spasi]</button>
+        <div style="display:flex; gap:6px;">
+          <button class="btn-action" id="btn-toggle-map" onclick="toggleMiniMap()">PETA [M]</button>
+          <button class="btn-action" id="btn-toggle-compass" onclick="toggleCompass()">KOMPAS [Spasi]</button>
+        </div>
       </div>
 
       <div class="quest-banner">
         <span class="quest-chip">MISI</span>
         <span class="quest-text" id="quest-tag">Dekati Kiki & Tekan [Spasi] Kompas Hati</span>
+      </div>
+
+      <!-- Mini-Map Card -->
+      <div id="minimap-card">
+        <div id="minimap-header">
+          <span>🗺️ PETA LEMBAH</span>
+          <button onclick="toggleMiniMap()" style="background:none; border:none; color:#94a3b8; cursor:pointer; font-size:9px; font-weight:bold;">✕</button>
+        </div>
+        <canvas id="minimap-canvas" width="144" height="112"></canvas>
+        <div id="minimap-footer">
+          <span id="mm-zone">📍 Alun-Alun</span>
+          <span>[M]</span>
+        </div>
       </div>
 
       <!-- Dialogue Box -->
@@ -175,6 +211,13 @@ export function downloadOfflineGameHtml() {
       targetPos = { x: worldX, y: worldY };
     });
 
+    let isMiniMapOpen = true;
+    function toggleMiniMap() {
+      isMiniMapOpen = !isMiniMapOpen;
+      document.getElementById('minimap-card').style.display = isMiniMapOpen ? 'flex' : 'none';
+      playTone(isMiniMapOpen ? 523 : 392, 0.1, 'sine');
+    }
+
     function toggleCompass() {
       isCompassActive = !isCompassActive;
       playTone(isCompassActive ? 659 : 330, 0.2, 'triangle');
@@ -191,6 +234,7 @@ export function downloadOfflineGameHtml() {
       if (e.key === 'ArrowLeft' || e.key === 'a' || e.key === 'A') keys.left = true;
       if (e.key === 'ArrowRight' || e.key === 'd' || e.key === 'D') keys.right = true;
       if (e.code === 'Space') { e.preventDefault(); toggleCompass(); }
+      if (e.key === 'm' || e.key === 'M') toggleMiniMap();
       if (e.key === 'e' || e.key === 'E' || e.key === 'Enter') triggerInteract();
     });
 
@@ -412,6 +456,73 @@ export function downloadOfflineGameHtml() {
       ctx.fillRect(player.x - 6, player.y - 12, 12, 4); // scarf
 
       ctx.restore();
+
+      // Update Mini-Map
+      if (isMiniMapOpen) {
+        const mmCanvas = document.getElementById('minimap-canvas');
+        if (mmCanvas) {
+          const mctx = mmCanvas.getContext('2d');
+          if (mctx) {
+            mctx.fillStyle = zoneRestored.plaza ? '#15803d' : '#334155';
+            mctx.fillRect(0, 0, 144, 112);
+
+            // River
+            mctx.fillStyle = zoneRestored.bridge ? '#2563eb' : '#1e293b';
+            mctx.fillRect(86, 0, 12, 112);
+
+            // Bridge
+            mctx.fillStyle = '#b45309';
+            mctx.fillRect(84, 64, 16, 8);
+
+            // Fountain
+            mctx.fillStyle = zoneRestored.plaza ? '#38bdf8' : '#64748b';
+            mctx.beginPath();
+            mctx.arc(47, 61, 4, 0, Math.PI * 2);
+            mctx.fill();
+
+            // NPCs
+            npcs.forEach(n => {
+              const nx = (n.x / 1100) * 144;
+              const ny = (n.y / 800) * 112;
+              mctx.fillStyle = n.resolved ? '#4ade80' : '#fbbf24';
+              mctx.beginPath();
+              mctx.arc(nx, ny, 2.5, 0, Math.PI * 2);
+              mctx.fill();
+            });
+
+            // Player on Mini-Map
+            const px = (player.x / 1100) * 144;
+            const py = (player.y / 800) * 112;
+
+            // Radar pulse
+            const pulse = (tick % 30) / 30;
+            mctx.strokeStyle = 'rgba(52, 211, 153, ' + (1 - pulse) + ')';
+            mctx.beginPath();
+            mctx.arc(px, py, 2 + pulse * 6, 0, Math.PI * 2);
+            mctx.stroke();
+
+            // Player dot
+            mctx.fillStyle = '#10b981';
+            mctx.beginPath();
+            mctx.arc(px, py, 3, 0, Math.PI * 2);
+            mctx.fill();
+            mctx.fillStyle = '#fff';
+            mctx.beginPath();
+            mctx.arc(px, py, 1, 0, Math.PI * 2);
+            mctx.fill();
+
+            // Update zone label
+            const zLabel = document.getElementById('mm-zone');
+            if (zLabel) {
+              if (player.x > 750 && player.y < 350) zLabel.innerText = '📍 Menara Jam';
+              else if (player.x < 350 && player.y < 350) zLabel.innerText = '📍 Hutan Sunyi';
+              else if (player.x >= 640 && player.x <= 760) zLabel.innerText = '📍 Jembatan';
+              else zLabel.innerText = '📍 Alun-Alun';
+            }
+          }
+        }
+      }
+
       requestAnimationFrame(update);
     }
 

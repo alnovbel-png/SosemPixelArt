@@ -1,5 +1,5 @@
 import React from 'react';
-import { Compass, Volume2, VolumeX, BookOpen, Download, HelpCircle } from 'lucide-react';
+import { Compass, Volume2, VolumeX, BookOpen, Download, HelpCircle, Map as MapIcon } from 'lucide-react';
 
 interface VirtualControlsProps {
   onDirectionPress: (dir: 'up' | 'down' | 'left' | 'right', pressed: boolean) => void;
@@ -12,6 +12,8 @@ interface VirtualControlsProps {
   onOpenHelp: () => void;
   onExportOffline: () => void;
   isDialogueOpen?: boolean;
+  onToggleMiniMap?: () => void;
+  isMiniMapOpen?: boolean;
 }
 
 export const VirtualControls: React.FC<VirtualControlsProps> = ({
@@ -25,6 +27,8 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
   onOpenHelp,
   onExportOffline,
   isDialogueOpen = false,
+  onToggleMiniMap,
+  isMiniMapOpen = false,
 }) => {
   return (
     <>
@@ -62,8 +66,25 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
           </button>
         </div>
 
-        {/* Right: Sound, Journal, Offline Export & Help */}
+        {/* Right: Map, Sound, Journal, Offline Export & Help */}
         <div className="flex items-center gap-1.5 sm:gap-2 pointer-events-auto shrink-0">
+          {onToggleMiniMap && (
+            <button
+              id="top-map-toggle-btn"
+              onClick={onToggleMiniMap}
+              title={isMiniMapOpen ? 'Sembunyikan Peta Mini [M]' : 'Buka Peta Mini [M]'}
+              className={`p-1.5 sm:px-2.5 sm:py-1.5 rounded-xl border shadow-lg backdrop-blur-md transition flex items-center gap-1.5 text-xs font-semibold ${
+                isMiniMapOpen
+                  ? 'bg-amber-500 text-slate-950 border-amber-300 shadow-[0_0_12px_rgba(245,158,11,0.5)]'
+                  : 'bg-slate-950/90 border-slate-700 hover:bg-slate-900 text-slate-300'
+              }`}
+            >
+              <MapIcon className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+              <span className="hidden sm:inline text-xs">Peta</span>
+              <span className="hidden lg:inline text-[10px] text-slate-400 font-mono">[M]</span>
+            </button>
+          )}
+
           <button
             id="top-journal-btn"
             onClick={onOpenJournal}
@@ -200,6 +221,9 @@ export const VirtualControls: React.FC<VirtualControlsProps> = ({
         </span>
         <span>
           <strong className="text-slate-200">[Spasi]:</strong> Kompas Resonansi
+        </span>
+        <span>
+          <strong className="text-slate-200">[M]:</strong> Peta
         </span>
         <span>
           <strong className="text-slate-200">[J]:</strong> Jurnal PSE

@@ -54,6 +54,11 @@ class SoundSystem {
     this.playTone(baseFreq + jitter, 'triangle', 0.05, 0.04);
   }
 
+  // UI selection blip
+  public playMenuSelect() {
+    this.playTone(480, 'sine', 0.06, 0.03);
+  }
+
   // Footstep grass/stone rustle
   public playStep() {
     this.playTone(180 + Math.random() * 40, 'triangle', 0.04, 0.02);
